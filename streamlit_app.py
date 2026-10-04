@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import html
 import math
 from datetime import datetime
@@ -10,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 
 from processing.calculations import Portfolio, build_portfolio
 from processing.enrich import (
@@ -385,16 +387,78 @@ def _css(dark: bool) -> None:
     )
 
 
+_UPLOAD_HTML = """
+<div style="font-family: inherit; color: inherit;">
+  <label style="display:block; font-size:14px; margin-bottom:6px;">CSV exports</label>
+  <input id="files" type="file" accept=".csv,text/csv" multiple
+    style="width:100%; font-size:13px;" />
+  <div id="names" style="font-size:12px; margin-top:6px; opacity:0.8;"></div>
+</div>
+<script>
+function send(type, data) {
+  window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
+}
+function ready() {
+  send("streamlit:componentReady", {apiVersion: 1});
+  send("streamlit:setFrameHeight", {height: 78});
+}
+function toBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+document.getElementById("files").addEventListener("change", async (event) => {
+  const chosen = Array.from(event.target.files || []);
+  document.getElementById("names").textContent = chosen.map((file) => file.name).join(", ");
+  const payload = [];
+  for (const file of chosen) {
+    payload.push({name: file.name, data: toBase64(await file.arrayBuffer())});
+  }
+  send("streamlit:setComponentValue", {value: payload, dataType: "json"});
+});
+window.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "streamlit:render") ready();
+});
+ready();
+</script>
+"""
+
+
+class _CsvUpload:
+    def __init__(self, name: str, data: bytes) -> None:
+        self.name = name
+        self._data = data
+
+    def getvalue(self) -> bytes:
+        return self._data
+
+
+def _csv_uploads() -> list[_CsvUpload]:
+    picked = components.html(_UPLOAD_HTML, height=86)
+    if picked:
+        files = []
+        for item in picked:
+            raw = item.get("data") if isinstance(item, dict) else None
+            name = str(item.get("name") or "export.csv") if isinstance(item, dict) else "export.csv"
+            if not raw:
+                continue
+            files.append(_CsvUpload(name, base64.b64decode(raw)))
+        if files:
+            st.session_state["csv_uploads"] = files
+    stored = st.session_state.get("csv_uploads") or []
+    return list(stored)
+
+
 def _sidebar_import() -> tuple[list, bool, bool, bool, bool]:
     with st.sidebar:
         st.header("Import")
         st.caption("DEGIRO, Bitvavo, and Ledger. Files stay on this computer.")
-        uploads = st.file_uploader(
-            "CSV exports",
-            type=["csv"],
-            accept_multiple_files=True,
-            help="Add a DEGIRO transactions or account export, a Bitvavo transaction history, and a Ledger Live operations file together.",
-        )
+        uploads = _csv_uploads()
+        if uploads:
+            st.caption(", ".join(item.name for item in uploads))
         process = st.button("Process", type="primary", disabled=not uploads, width="stretch")
         reprocess = st.button("Re-process", disabled=not uploads, width="stretch")
         use_sample = st.button("Use sample data", width="stretch")
