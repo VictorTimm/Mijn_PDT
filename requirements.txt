@@ -1,8 +1,8 @@
 streamlit>=1.57
 pandas>=2.2
 plotly>=5.22
-# Optional. The saved import is written to SQLite when SQLAlchemy is installed, and to CSV either way.
-sqlalchemy>=2.0
-# Optional. Holdings fall back to manual overrides when either package is missing.
-financedatabase>=2.2
 yfinance>=0.2
+# Kept off the Vercel install. financedatabase pulls SciPy and scikit-learn and
+# pushes the function over the 500 MB limit. SQLAlchemy is only used for an
+# optional SQLite copy; the CSV cache is always written. Install either locally
+# if you want those extras.
