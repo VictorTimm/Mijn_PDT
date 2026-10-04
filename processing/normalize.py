@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -19,7 +20,8 @@ import pandas as pd
 from processing.models import FIAT, TRANSACTION_COLUMNS, empty_frame, make_row, records_frame
 
 COLUMNS = TRANSACTION_COLUMNS
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+# Vercel functions can only write under /tmp. Local runs keep the project data folder.
+DATA_DIR = Path("/tmp/mijn_pdt") if os.environ.get("VERCEL") else Path(__file__).resolve().parent.parent / "data"
 EPS = 1e-8
 
 _HEADER_KEYS = (

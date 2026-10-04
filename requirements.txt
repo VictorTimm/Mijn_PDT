@@ -1,4 +1,4 @@
-streamlit>=1.39
+streamlit>=1.57
 pandas>=2.2
 plotly>=5.22
 # Optional. The saved import is written to SQLite when SQLAlchemy is installed, and to CSV either way.
