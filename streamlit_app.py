@@ -387,44 +387,10 @@ def _css(dark: bool) -> None:
     )
 
 
-_UPLOAD_HTML = """
-<div style="font-family: inherit; color: inherit;">
-  <label style="display:block; font-size:14px; margin-bottom:6px;">CSV exports</label>
-  <input id="files" type="file" accept=".csv,text/csv" multiple
-    style="width:100%; font-size:13px;" />
-  <div id="names" style="font-size:12px; margin-top:6px; opacity:0.8;"></div>
-</div>
-<script>
-function send(type, data) {
-  window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
-}
-function ready() {
-  send("streamlit:componentReady", {apiVersion: 1});
-  send("streamlit:setFrameHeight", {height: 78});
-}
-function toBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-}
-document.getElementById("files").addEventListener("change", async (event) => {
-  const chosen = Array.from(event.target.files || []);
-  document.getElementById("names").textContent = chosen.map((file) => file.name).join(", ");
-  const payload = [];
-  for (const file of chosen) {
-    payload.push({name: file.name, data: toBase64(await file.arrayBuffer())});
-  }
-  send("streamlit:setComponentValue", {value: payload, dataType: "json"});
-});
-window.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "streamlit:render") ready();
-});
-ready();
-</script>
-"""
+_csv_picker = components.declare_component(
+    "csv_upload",
+    path=str(Path(__file__).resolve().parent / "csv_upload"),
+)
 
 
 class _CsvUpload:
@@ -437,8 +403,8 @@ class _CsvUpload:
 
 
 def _csv_uploads() -> list[_CsvUpload]:
-    picked = components.html(_UPLOAD_HTML, height=86)
-    if picked:
+    picked = _csv_picker(default=None, key="csv_picker")
+    if isinstance(picked, list):
         files = []
         for item in picked:
             raw = item.get("data") if isinstance(item, dict) else None
