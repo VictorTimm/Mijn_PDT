@@ -1,0 +1,8 @@
+streamlit>=1.39
+pandas>=2.2
+plotly>=5.22
+# Optional. The saved import is written to SQLite when SQLAlchemy is installed, and to CSV either way.
+sqlalchemy>=2.0
+# Optional. Holdings fall back to manual overrides when either package is missing.
+financedatabase>=2.2
+yfinance>=0.2

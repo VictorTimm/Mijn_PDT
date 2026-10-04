@@ -1,0 +1,3 @@
+Date,Time,Type,Currency,Amount,Quote Currency,Quote Price,Received / Paid Currency,Received / Paid Amount,Fee currency,Fee amount,Status,Market
+2024-03-01,09:00,deposit,EUR,2500,,,,,,,Completed,
+2024-03-01,09:05,buy,ETH,1,EUR,2000,EUR,2000,EUR,1,Completed,ETH-EUR
